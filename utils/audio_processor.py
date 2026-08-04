@@ -11,7 +11,8 @@ def download_youtube_audio(url: str) -> str:
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
     
     ydl_opts = {
-        "format": "ba/ba*",  # Flexible audio format selector
+        # 'best' format allow karta hai ki agar audio-only na mile toh full video download karke audio extract kar le
+        "format": "ba/ba*/best",
         "outtmpl": output_path,
         "postprocessors": [
             {
@@ -24,8 +25,8 @@ def download_youtube_audio(url: str) -> str:
         "nocheckcertificate": True,
         "extractor_args": {
             "youtube": {
-                # Fallback clients that bypass SABR-only stream restrictions on cloud IPs
-                "player_client": ["mweb", "ios", "android_creator"],
+                # Multiple fallback clients
+                "player_client": ["mweb", "ios", "web"],
                 "player_skip": ["configs", "webpage"],
             }
         },
@@ -36,8 +37,8 @@ def download_youtube_audio(url: str) -> str:
 
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        # Post-processor conversion after FFmpeg runs
         base_filename = ydl.prepare_filename(info)
+        # Extension ko force .wav set karein (jaise FFmpeg extract karta hai)
         filename = os.path.splitext(base_filename)[0] + ".wav"
 
     return filename
