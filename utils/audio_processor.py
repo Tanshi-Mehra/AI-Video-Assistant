@@ -2,32 +2,13 @@ import yt_dlp
 from pydub import AudioSegment
 import os
 
-
-from youtube_transcript_api import YouTubeTranscriptApi
-
 DOWNLOAD_DIR = 'downloades'
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+os.makedirs(DOWNLOAD_DIR,exist_ok = True)
 
-def extract_video_id(url: str) -> str:
-    """YouTube URL se Video ID extract karne ke liye helper function"""
-    if "v=" in url:
-        return url.split("v=")[1].split("&")[0]
-    elif "youtu.be/" in url:
-        return url.split("youtu.be/")[1].split("?")[0]
-    return url
-
-def get_youtube_transcript(video_id: str) -> str:
-    """Direct YouTube API se transcript fetch karne ka function"""
-    transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-    full_text = " ".join([item['text'] for item in transcript_list])
-    return full_text
-
-def download_youtube_audio(url: str) -> str:
-    """Audio download function with fallback handling"""
+def download_youtube_audio(url :str) ->str:
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
-    
     ydl_opts = {
-        "format": "ba/ba*/best",
+        "format": "bestaudio/best",
         "outtmpl": output_path,
         "postprocessors": [
             {
@@ -37,23 +18,10 @@ def download_youtube_audio(url: str) -> str:
             }
         ],
         "quiet": True,
-        "nocheckcertificate": True,
-        "extractor_args": {
-            "youtube": {
-                "player_client": ["mweb", "ios", "web"],
-                "player_skip": ["configs", "webpage"],
-            }
-        },
-        "http_headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-        }
     }
-
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        base_filename = ydl.prepare_filename(info)
-        filename = os.path.splitext(base_filename)[0] + ".wav"
-
+        filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
     return filename
 
 
