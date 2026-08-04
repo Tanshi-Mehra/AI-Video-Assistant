@@ -3,15 +3,30 @@ from pydub import AudioSegment
 import os
 
 
+from youtube_transcript_api import YouTubeTranscriptApi
 
 DOWNLOAD_DIR = 'downloades'
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
+def extract_video_id(url: str) -> str:
+    """YouTube URL se Video ID extract karne ke liye helper function"""
+    if "v=" in url:
+        return url.split("v=")[1].split("&")[0]
+    elif "youtu.be/" in url:
+        return url.split("youtu.be/")[1].split("?")[0]
+    return url
+
+def get_youtube_transcript(video_id: str) -> str:
+    """Direct YouTube API se transcript fetch karne ka function"""
+    transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+    full_text = " ".join([item['text'] for item in transcript_list])
+    return full_text
+
 def download_youtube_audio(url: str) -> str:
+    """Audio download function with fallback handling"""
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
     
     ydl_opts = {
-        # 'best' format allow karta hai ki agar audio-only na mile toh full video download karke audio extract kar le
         "format": "ba/ba*/best",
         "outtmpl": output_path,
         "postprocessors": [
@@ -25,7 +40,6 @@ def download_youtube_audio(url: str) -> str:
         "nocheckcertificate": True,
         "extractor_args": {
             "youtube": {
-                # Multiple fallback clients
                 "player_client": ["mweb", "ios", "web"],
                 "player_skip": ["configs", "webpage"],
             }
@@ -38,7 +52,6 @@ def download_youtube_audio(url: str) -> str:
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         base_filename = ydl.prepare_filename(info)
-        # Extension ko force .wav set karein (jaise FFmpeg extract karta hai)
         filename = os.path.splitext(base_filename)[0] + ".wav"
 
     return filename
