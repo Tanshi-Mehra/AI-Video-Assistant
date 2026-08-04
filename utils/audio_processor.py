@@ -2,13 +2,16 @@ import yt_dlp
 from pydub import AudioSegment
 import os
 
-DOWNLOAD_DIR = 'downloades'
-os.makedirs(DOWNLOAD_DIR,exist_ok = True)
 
-def download_youtube_audio(url :str) ->str:
+
+DOWNLOAD_DIR = 'downloades'
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+def download_youtube_audio(url: str) -> str:
     output_path = os.path.join(DOWNLOAD_DIR, "%(title)s.%(ext)s")
+    
     ydl_opts = {
-        "format": "bestaudio/best",
+        "format": "ba/ba*",  # Flexible audio format selector
         "outtmpl": output_path,
         "postprocessors": [
             {
@@ -19,19 +22,24 @@ def download_youtube_audio(url :str) ->str:
         ],
         "quiet": True,
         "nocheckcertificate": True,
-    "extractor_args": {
-        "youtube": {
-            "player_client": ["android", "web"]
+        "extractor_args": {
+            "youtube": {
+                # Fallback clients that bypass SABR-only stream restrictions on cloud IPs
+                "player_client": ["mweb", "ios", "android_creator"],
+                "player_skip": ["configs", "webpage"],
+            }
+        },
+        "http_headers": {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
         }
-    },
+    }
 
-        'http_headers': {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    }
-    }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
+        # Post-processor conversion after FFmpeg runs
+        base_filename = ydl.prepare_filename(info)
+        filename = os.path.splitext(base_filename)[0] + ".wav"
+
     return filename
 
 
